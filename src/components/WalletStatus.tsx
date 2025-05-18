@@ -1,8 +1,11 @@
 'use client' ;
 
 import { walletStore } from '@/stores/walletStore';
+import { useWalletConnect } from '@/hooks/useWalletConnect'
 
 export const WalletStatus = () => {
+  // 👇 触发监听和状态同步
+  useWalletConnect();
   const { address, chainId, isConnected } = walletStore();
   return (
     <div className="p-4 bg-gray-100 rounded-md shadow w-fit">

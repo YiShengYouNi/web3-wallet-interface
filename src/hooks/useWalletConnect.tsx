@@ -12,16 +12,12 @@ import { walletStore } from '@/stores/walletStore';
 export const useWalletConnect = () => {
 
   const { address, chainId, isConnected } = useAccount();
+  console.log("address:", address, "chainId:", chainId, "isConnected:", isConnected);
   const { data: walletClient } = useWalletClient();
 
-
   const setWalletInfo = walletStore(s => s.setWalletInfo);
-  //   const setWalletInfo = useCallback(
-  //   (address: string | null, chainId: string | null) => {
-  //     walletStore.getState().setWalletInfo(address, chainId);
-  //   },
-  //   []
-  // );
+
+ 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // 监听 wagmi 连接状态变化，并同步到 Zustand 状态中
