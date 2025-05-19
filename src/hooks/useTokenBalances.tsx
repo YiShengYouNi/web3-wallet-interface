@@ -32,7 +32,7 @@ export const useTokenBalances = ( {tokens, pollInterval}: UseTokenBalancesProps)
       refetchInterval: pollInterval ?? false, // 可配置自动刷新
     }, // 实时监听变动（可选）
   });
-  console.log('data', data);
+  // console.log('data', data);
   const balances = useMemo(() => {
     if (!data || !tokens.length) return []
 
