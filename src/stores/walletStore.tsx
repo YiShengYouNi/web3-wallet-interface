@@ -3,7 +3,7 @@ import { create } from 'zustand';
 
 interface WalletState {
   address: string | null;
-  chainId: string | null;
+  chainId: string | number | null;
   isConnected: boolean;
   setWalletInfo: (address: string| null, chainId: string | null) => void;
 }
