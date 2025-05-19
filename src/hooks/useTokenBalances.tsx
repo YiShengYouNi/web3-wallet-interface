@@ -1,64 +1,55 @@
-import { useBalance } from 'wagmi';
-import { formatUnits } from 'viem';
+import { useReadContracts } from 'wagmi';
+import { erc20Abi, formatUnits } from 'viem';
+import { useMemo } from 'react';
+import { walletStore } from '@/stores/walletStore';
+import { Token } from '@/types';
 
-type Token = {
-  address: `0x${string}`;
-  name: string;
-};
 
-type TokenBalanceResult = {
-  name: string;
-  symbol: string;
-  value: bigint;
-  decimals: number;
-  formatted: string;
+interface UseTokenBalancesProps {
+  tokens: Token[],
+  pollInterval?: number; // 轮询间隔，单位毫秒
 }
 
-export const useTokenBalances = (address: `0x${string}`,  tokenList: Token[]) : { loading:boolean, balances: TokenBalanceResult[]}=> {
-   
-  const tokens = tokenList.slice(0, 3); // 目前支持最多3个token
+export const useTokenBalances = ( {tokens, pollInterval}: UseTokenBalancesProps) => {
+  const {address, isConnected} = walletStore();
+  
+  const contracts = useMemo(() => {
+    if (!isConnected || !address) return []
 
-  const b1 = useBalance({
-    address,
-    token: tokens[0]?.address,
-    query: { enabled: !!address && !!tokens[0]?.address },
+    return tokens.map(token => ({
+      address: token.address,
+      abi: erc20Abi,
+      functionName: 'balanceOf',
+      args: [address],
+    }))
+  }, [tokens, address, isConnected])
+  
+  const { data, isLoading, error, refetch } = useReadContracts({
+    contracts,
+    query: {
+      enabled: !!address && isConnected && contracts.length > 0,
+       staleTime: 10_000, // 可缓存 10 秒
+      refetchInterval: pollInterval ?? false, // 可配置自动刷新
+    }, // 实时监听变动（可选）
   });
+  console.log('data', data);
+  const balances = useMemo(() => {
+    if (!data || !tokens.length) return []
 
-  const b2 = useBalance({
-    address,
-    token: tokens[1]?.address,
-    query: { enabled: !!address && !!tokens[1]?.address },
-  });
-
-  const b3 = useBalance({
-    address,
-    token: tokens[2]?.address,
-    query: { enabled: !!address && !!tokens[2]?.address },
-  });
-
-  const balancesRaw = [b1, b2, b3];
-
-  const balances: TokenBalanceResult[] = balancesRaw.map((b, i) => {
-    const token = tokens[i];
-    return b.data
-      ? {
-          name: token.name,
-          symbol: b.data.symbol,
-          value: b.data.value,
-          decimals: b.data.decimals,
-          formatted: formatUnits(b.data.value, b.data.decimals),
-        }
-      : {
-          name: token.name,
-          symbol: '',
-          value: 0n,
-          decimals: 18,
-          formatted: '0',
-        };
-  });
-
-  // console.log('balances', balances);
-  const loading = balancesRaw.some((b) => b.isLoading);
-
-  return { loading, balances };
+    return tokens.map((token, i) => {
+      const result = data[i]
+      const raw = result?.result?.toString() ?? '0'
+      return {
+        ...token,
+        balance: formatUnits(BigInt(raw), token.decimals?? 0),
+      }
+    })
+  }, [data, tokens])
+  
+  return {
+    balances,
+    isLoading,
+    error,
+    refetch,
+  }
 };
