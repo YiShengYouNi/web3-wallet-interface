@@ -1,6 +1,6 @@
 'use client'
-import { useEffect } from 'react'
-import { useAccount, useWalletClient } from 'wagmi'
+import { useEffect, useRef } from 'react';
+import { useAccount, useWalletClient } from 'wagmi';
 import { walletStore } from '@/stores/walletStore';
 
 /**
@@ -12,18 +12,32 @@ import { walletStore } from '@/stores/walletStore';
 export const useWalletConnect = () => {
 
   const { address, chainId, isConnected } = useAccount();
-  console.log("address:", address, "chainId:", chainId, "isConnected:", isConnected);
+  // console.log("address:", address, "chainId:", chainId, "isConnected:", isConnected);
   const { data: walletClient } = useWalletClient();
 
   const setWalletInfo = walletStore(s => s.setWalletInfo);
+
+  const lastStateRef = useRef({ address: null as string | null, chainId: null as string | null });
+
 
  
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // 监听 wagmi 连接状态变化，并同步到 Zustand 状态中
-    setWalletInfo(address ?? null, chainId?.toString() ?? null);
+    // setWalletInfo(address ?? null, chainId?.toString() ?? null);
+     const newAddress = address ?? null;
+    const newChainId = chainId?.toString() ?? null;
+
+    const isChanged =
+      newAddress !== lastStateRef.current.address ||
+      newChainId !== lastStateRef.current.chainId;
+
+    if (isChanged) {
+      console.log('[WalletConnect] 状态变化:', newAddress, newChainId);
+      setWalletInfo(newAddress, newChainId);
+      lastStateRef.current = { address: newAddress, chainId: newChainId };
+    }
 
   }, [address, chainId, isConnected, walletClient]);
 
-  return walletStore();
 };
